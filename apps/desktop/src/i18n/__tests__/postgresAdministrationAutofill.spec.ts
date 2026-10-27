@@ -29,7 +29,15 @@ it("the trusted autofill CLI accepts the shipped PostgreSQL locale declarations 
     expect(result.stdout).toContain("en: all new keys already present");
     expect(result.stdout).toContain("pt-BR: all new keys already present");
     expect(result.stdout).toContain("zh-TW: all new keys already present");
-    expect(result.stdout).toContain("Dry run completed; 6 locale file(s) would be patched");
+    // The workflow may already have filled other locales on this branch.
+    expect(result.stdout).toMatch(/Dry run completed; \d+ locale file\(s\) would be patched|No locale files needed changes/);
+    // Exercise both states: a fresh PR and the same declarations after autofill.
+    // Writes are confined to the disposable fixture and never use a service.
+    const fill = spawnSync(process.execPath, [script, "--write", "--mock-translations", "--base-ref", "HEAD"], { cwd: directory, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 });
+    expect(fill.status, fill.stderr).toBe(0);
+    const recheck = spawnSync(process.execPath, [script, "--dry-run", "--mock-translations", "--base-ref", "HEAD"], { cwd: directory, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 });
+    expect(recheck.status, recheck.stderr).toBe(0);
+    expect(recheck.stdout).toContain("No locale files needed changes");
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

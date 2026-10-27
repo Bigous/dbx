@@ -1021,6 +1021,24 @@ describe("ProcessListPanel batch terminate", () => {
     await vi.waitFor(() => expect(root?.textContent).toContain("processList.batchSummary:2,0"));
   });
 
+  it("disables PostgreSQL signals and selection when session identity is restricted", async () => {
+    const original = mocks.executeQuery.getMockImplementation()!;
+    mocks.executeQuery.mockImplementation((...args) => {
+      if (args[2] === PG_PROCESS_LIST_SQL) {
+        const result = postgresListResult();
+        return Promise.resolve({ ...result, rows: result.rows.map((row, index) => (index === 1 ? row.map((value, column) => (column === 9 ? null : value)) : row)) });
+      }
+      return original(...args);
+    });
+    app = createApp(ProcessListPanel, { connection: postgresConnection });
+    app.mount(root!);
+    await vi.waitFor(() => expect(sessionCheckbox(22)?.disabled).toBe(false));
+    const restricted = sessionCheckbox(21)!.closest("tr")!;
+    expect(restricted.querySelector<HTMLButtonElement>('button[title="processList.kill"]')?.disabled).toBe(true);
+    expect(restricted.querySelector<HTMLButtonElement>('button[title="processList.terminate"]')?.disabled).toBe(true);
+    expect(sessionCheckbox(21)?.disabled).toBe(true);
+  });
+
   it("enables selection and batch termination on engines without batch cancel", async () => {
     // PostgreSQL requires the server to confirm the termination with a true result cell.
     mocks.executeMulti.mockResolvedValue([{ columns: ["pg_terminate_backend"], rows: [[true]] }]);

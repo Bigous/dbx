@@ -180,7 +180,7 @@ const filteredRows = computed(() => {
   });
 });
 
-const selectableRows = computed(() => (ownSessionId.value === null ? [] : filteredRows.value.filter((row) => !isOwnSession(row) && (typeof row.id === "string" ? /^\d+$/.test(row.id) : Number.isSafeInteger(row.id) && row.id > 0))));
+const selectableRows = computed(() => (ownSessionId.value === null ? [] : filteredRows.value.filter((row) => !isOwnSession(row) && (!postgres.value || !!row.backend_start) && (typeof row.id === "string" ? /^\d+$/.test(row.id) : Number.isSafeInteger(row.id) && row.id > 0))));
 const allSelected = computed(() => selectableRows.value.length > 0 && selectableRows.value.every((row) => selectedIds.value.has(row.id)));
 const partiallySelected = computed(() => selectedIds.value.size > 0 && !allSelected.value);
 
@@ -872,7 +872,7 @@ function sessionMenu(row: ProcessRow): ContextMenuItem[] {
                   type="checkbox"
                   class="h-3.5 w-3.5 accent-primary"
                   :checked="selectedIds.has(row.id)"
-                  :disabled="actionsLocked || refreshing || ownSessionId === null || isOwnSession(row) || typeof row.id !== 'number' || !Number.isSafeInteger(row.id) || row.id <= 0"
+                  :disabled="(postgres && !row.backend_start) || actionsLocked || refreshing || ownSessionId === null || isOwnSession(row) || typeof row.id !== 'number' || !Number.isSafeInteger(row.id) || row.id <= 0"
                   :aria-label="t('processList.selectSession', { id: row.id })"
                   @click="toggleSelection(row.id, $event as MouseEvent)"
                 />
@@ -906,7 +906,7 @@ function sessionMenu(row: ProcessRow): ContextMenuItem[] {
                     variant="ghost"
                     size="sm"
                     class="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
-                    :disabled="isOwnSession(row) || transactionIdentityUnavailable || actionsLocked || refreshing"
+                    :disabled="isOwnSession(row) || (postgres && (!row.backend_start || ownSessionId === null)) || transactionIdentityUnavailable || actionsLocked || refreshing"
                     :title="isOwnSession(row) ? t(transactionMode ? 'processList.transactionCannotKillSelf' : 'processList.cannotKillSelf') : t(transactionMode ? 'processList.transactionKill' : 'processList.kill')"
                     @click="requestCancel(row)"
                   >
@@ -918,7 +918,7 @@ function sessionMenu(row: ProcessRow): ContextMenuItem[] {
                     variant="ghost"
                     size="sm"
                     class="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
-                    :disabled="(rowAwareTerminate && ownSessionId === null) || isOwnSession(row) || !!terminateRowDisabledReason(row) || actionsLocked || refreshing"
+                    :disabled="(postgres && (!row.backend_start || ownSessionId === null)) || (rowAwareTerminate && ownSessionId === null) || isOwnSession(row) || !!terminateRowDisabledReason(row) || actionsLocked || refreshing"
                     :title="isOwnSession(row) ? t('processList.cannotTerminateSelf') : terminateRowDisabledReason(row) ? t(terminateRowDisabledReason(row) ?? '') : t('processList.terminate')"
                     @click="requestTerminate(row)"
                   >

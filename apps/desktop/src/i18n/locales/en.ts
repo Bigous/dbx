@@ -1,3 +1,4 @@
+import { postgresAdminMessages } from "./postgresAdministrationMessages";
 import { tableColumnPasteEn as tableColumnPaste } from "./tableColumnPaste";
 import { sidebarMenuEn as sidebarMenu } from "./sidebarMenuMessages";
 import { oceanbaseCloneDialogEn as oceanbaseCloneDialog } from "./oceanbaseCloneDialog";
@@ -65,6 +66,7 @@ const consul = {
 };
 
 export default {
+  postgresAdmin: postgresAdminMessages("en"),
   oracleTrigger: {
     errorPositionUnavailable: "Source opened. The error location could not be verified; check the reported line and column.",
     reconcileStructure: "Reconcile applied changes",
